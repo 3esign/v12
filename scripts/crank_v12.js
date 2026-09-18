@@ -22,6 +22,7 @@ const potPubkey = potKeypair.publicKey;
 const {
   PumpSdk,
   feeSharingConfigPda,
+  creatorVaultPda,
 } = require("C:/Svemir/tools/solana-cli/scripts-scratch/node_modules/@pump-fun/pump-sdk");
 const {
   NATIVE_MINT,
@@ -47,6 +48,11 @@ console.log("Initial Fuse:", currentDuration, "seconds");
 
 async function pullCreatorFees() {
   try {
+    const creatorVault = creatorVaultPda(cfgPda);
+    const vaultBal = await connection.getBalance(creatorVault);
+    // Only pull when accumulated fees are worth the gas (> 0.003 SOL)
+    if (vaultBal < 3_000_000) return;
+
     const acc = await connection.getAccountInfo(cfgPda);
     if (!acc) return;
     const sharingConfig = sdk.offlinePumpFeeProgram.coder.accounts.decode('sharingConfig', acc.data);
