@@ -91,7 +91,7 @@
           <a id="tg-link" href="https://t.me/ratchetx" target="_blank" class="bg-slate-900 border border-slate-700 hover:border-cyan-400 text-xs text-cyan-300 font-mono px-3 py-2.5 rounded-xl transition active:scale-95 flex items-center gap-1.5">
             <span>✈️</span> <span>Telegram</span>
           </a>
-          <a id="x-link" href="https://x.com" target="_blank" class="bg-slate-900 border border-slate-700 hover:border-orange-400 text-xs text-white font-mono px-3 py-2.5 rounded-xl transition active:scale-95 flex items-center gap-1.5">
+          <a id="x-link" href="https://x.com/SonyxEth/status/2101036196252332220" target="_blank" class="bg-slate-900 border border-slate-700 hover:border-orange-400 text-xs text-white font-mono px-3 py-2.5 rounded-xl transition active:scale-95 flex items-center gap-1.5">
             <span>𝕏</span> <span>Post</span>
           </a>
           <button id="sound-btn" onclick="toggleEngineSound()" class="bg-slate-900 border border-slate-700 hover:border-slate-500 text-xs px-2.5 py-2.5 rounded-xl text-slate-300 transition" title="Engine Audio">
@@ -101,38 +101,6 @@
 
       </div>
     </header>
-
-    <!-- PRE-LAUNCH BANNER (Toggled automatically when live) -->
-    <div id="prelaunch-hero" class="border border-amber-500/40 bg-amber-950/20 backdrop-blur-md rounded-2xl p-5 mb-5 text-center relative overflow-hidden">
-      <div class="absolute -right-12 -top-12 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="inline-block px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/50 text-orange-400 text-xs font-mono font-bold tracking-widest uppercase mb-2">
-        ⚡ WARMING UP CYLINDERS // AWAITING GENESIS IGNITION
-      </div>
-      <h2 class="text-2xl sm:text-3xl font-black text-white uppercase tracking-wider mb-2 font-mono">
-        THE PUMP.FUN V12 PROTOCOL ENGINE
-      </h2>
-      <p class="max-w-2xl mx-auto text-xs sm:text-sm text-slate-300 leading-relaxed font-mono mb-4">
-        Every trade on Pump.fun feeds the V12 Pot with 67% of creator fees. Every progressive round, 50% buys and burns the curve to draw permanent green candles, while 50% drops directly as clean SOL to the Top 5 Holders. Zero bots required.
-      </p>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-3xl mx-auto text-left font-mono text-xs">
-        <div class="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
-          <div class="text-[10px] text-slate-400 uppercase">1. Anti-Snipe Decay</div>
-          <div class="text-orange-400 font-bold text-sm mt-0.5">5% ➔ 1% BPS</div>
-        </div>
-        <div class="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
-          <div class="text-[10px] text-slate-400 uppercase">2. Split Engine</div>
-          <div class="text-cyan-400 font-bold text-sm mt-0.5">67% Pot / 33% Arch</div>
-        </div>
-        <div class="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
-          <div class="text-[10px] text-slate-400 uppercase">3. Progressive Fuse</div>
-          <div class="text-amber-400 font-bold text-sm mt-0.5">20s ➔ 1h Max</div>
-        </div>
-        <div class="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
-          <div class="text-[10px] text-slate-400 uppercase">4. Direct Airdrop</div>
-          <div class="text-emerald-400 font-bold text-sm mt-0.5">Top 5 Diamond Wallets</div>
-        </div>
-      </div>
-    </div>
 
     <!-- MAIN CAR DASHBOARD COCKPIT -->
     <div class="border border-slate-800 bg-slate-950/95 rounded-3xl p-4 sm:p-6 mb-5 shadow-2xl relative">
@@ -159,45 +127,45 @@
       </div>
 
       <!-- THE THREE PRIMARY GAUGES -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center">
+      <div class="flex flex-row justify-center items-end gap-1 sm:gap-6 text-center">
 
         <!-- GAUGE 1: SPEEDOMETER (CREATOR FEE RATE) -->
         <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 relative flex flex-col items-center">
-          <div class="text-[11px] text-slate-400 font-mono font-bold tracking-widest uppercase mb-1">
+          <div class="text-[7px] sm:text-[11px] text-slate-400 font-mono font-bold tracking-tight sm:tracking-widest uppercase mb-1">
             SPEED // CREATOR FEE
           </div>
-          <div class="relative w-44 h-28 flex items-center justify-center overflow-hidden">
+          <div class="relative w-24 h-16 sm:w-44 sm:h-28 flex items-center justify-center overflow-hidden">
             <!-- Semi-circle dial -->
-            <svg class="w-44 h-44 absolute -top-8" viewBox="0 0 100 100">
+            <svg class="w-24 h-24 sm:w-44 sm:h-44 absolute -top-8" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="40" fill="none" stroke="#1e293b" stroke-width="8" stroke-dasharray="125 125" stroke-linecap="round" transform="rotate(135 50 50)"/>
               <circle cx="50" cy="50" r="40" fill="none" stroke="#ff6b00" stroke-width="8" stroke-dasharray="80 125" stroke-linecap="round" transform="rotate(135 50 50)" opacity="0.8"/>
             </svg>
             <!-- Needle -->
-            <div id="fee-needle" class="gauge-needle absolute bottom-2 w-1.5 h-16 bg-gradient-to-t from-orange-600 to-amber-300 rounded-full" style="transform: rotate(45deg);"></div>
+            <div id="fee-needle" class="gauge-needle absolute bottom-2 w-1.5 h-10 sm:h-16 bg-gradient-to-t from-orange-600 to-amber-300 rounded-full" style="transform: rotate(45deg);"></div>
             <div class="w-5 h-5 rounded-full bg-slate-950 border-2 border-orange-500 absolute bottom-0 z-10"></div>
           </div>
           <div class="mt-2 font-mono">
-            <span id="fee-display" class="text-2xl font-black text-orange-400 neon-amber">5.00%</span>
-            <span class="text-[10px] text-slate-400 block uppercase">DYNAMIC SLOWDOWN TO 1.00%</span>
+            <span id="fee-display" class="text-sm sm:text-2xl font-black text-orange-400 neon-amber">5.00%</span>
+            <span class="hidden sm:block text-[10px] text-slate-400 uppercase">DYNAMIC SLOWDOWN TO 1.00%</span>
           </div>
         </div>
 
         <!-- GAUGE 2: TACHOMETER / RPM (ROUND PROGRESSIVE FUSE) -->
         <div class="bg-slate-900/80 border-2 border-orange-500/40 rounded-2xl p-5 relative flex flex-col items-center shadow-[0_0_30px_rgba(255,107,0,0.15)]">
-          <div class="text-xs text-orange-400 font-mono font-black tracking-widest uppercase mb-1 flex items-center gap-1.5">
+          <div class="text-[8px] sm:text-xs text-orange-400 font-mono font-black tracking-tight sm:tracking-widest uppercase mb-1 flex items-center gap-1.5">
             <span>🔥</span> RPM // SETTLEMENT FUSE
           </div>
-          <div class="relative w-52 h-32 flex items-center justify-center overflow-hidden">
-            <svg class="w-52 h-52 absolute -top-8" viewBox="0 0 100 100">
+          <div class="relative w-28 h-20 sm:w-52 sm:h-32 flex items-center justify-center overflow-hidden">
+            <svg class="w-28 h-28 sm:w-52 sm:h-52 absolute -top-8" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="42" fill="none" stroke="#1e293b" stroke-width="9" stroke-dasharray="132 132" stroke-linecap="round" transform="rotate(135 50 50)"/>
               <!-- Redline arc -->
               <circle cx="50" cy="50" r="42" fill="none" stroke="#ef4444" stroke-width="9" stroke-dasharray="40 132" stroke-dashoffset="-92" stroke-linecap="round" transform="rotate(135 50 50)"/>
             </svg>
-            <div id="rpm-needle" class="gauge-needle absolute bottom-2 w-2 h-20 bg-gradient-to-t from-red-600 to-orange-400 rounded-full shadow-[0_0_10px_#ef4444]" style="transform: rotate(-45deg);"></div>
+            <div id="rpm-needle" class="gauge-needle absolute bottom-2 w-2 h-12 sm:h-20 bg-gradient-to-t from-red-600 to-orange-400 rounded-full shadow-[0_0_10px_#ef4444]" style="transform: rotate(-45deg);"></div>
             <div class="w-6 h-6 rounded-full bg-slate-950 border-2 border-red-500 absolute bottom-0 z-10"></div>
           </div>
           <div class="mt-2 font-mono">
-            <div class="text-3xl font-black text-white tracking-widest font-mono" id="timer-display">
+            <div class="text-base sm:text-3xl font-black text-white tracking-widest font-mono" id="timer-display">
               00:20
             </div>
             <div class="text-[11px] text-slate-400 mt-0.5">
@@ -208,20 +176,20 @@
 
         <!-- GAUGE 3: FUEL GAUGE (POT ACCUMULATED SOL) -->
         <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 relative flex flex-col items-center">
-          <div class="text-[11px] text-slate-400 font-mono font-bold tracking-widest uppercase mb-1">
+          <div class="text-[7px] sm:text-[11px] text-slate-400 font-mono font-bold tracking-tight sm:tracking-widest uppercase mb-1">
             FUEL // 67% POT TANK
           </div>
-          <div class="relative w-44 h-28 flex items-center justify-center overflow-hidden">
-            <svg class="w-44 h-44 absolute -top-8" viewBox="0 0 100 100">
+          <div class="relative w-24 h-16 sm:w-44 sm:h-28 flex items-center justify-center overflow-hidden">
+            <svg class="w-24 h-24 sm:w-44 sm:h-44 absolute -top-8" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="40" fill="none" stroke="#1e293b" stroke-width="8" stroke-dasharray="125 125" stroke-linecap="round" transform="rotate(135 50 50)"/>
               <circle id="fuel-arc" cx="50" cy="50" r="40" fill="none" stroke="#00e5ff" stroke-width="8" stroke-dasharray="30 125" stroke-linecap="round" transform="rotate(135 50 50)"/>
             </svg>
-            <div id="fuel-needle" class="gauge-needle absolute bottom-2 w-1.5 h-16 bg-gradient-to-t from-cyan-600 to-cyan-300 rounded-full" style="transform: rotate(-30deg);"></div>
+            <div id="fuel-needle" class="gauge-needle absolute bottom-2 w-1.5 h-10 sm:h-16 bg-gradient-to-t from-cyan-600 to-cyan-300 rounded-full" style="transform: rotate(-30deg);"></div>
             <div class="w-5 h-5 rounded-full bg-slate-950 border-2 border-cyan-400 absolute bottom-0 z-10"></div>
           </div>
           <div class="mt-2 font-mono">
-            <span id="pot-display" class="text-2xl font-black text-cyan-400 neon-cyan">0.00 SOL</span>
-            <span class="text-[10px] text-slate-400 block uppercase">50% BURN // 50% TOP 5 DROP</span>
+            <span id="pot-display" class="text-sm sm:text-2xl font-black text-cyan-400 neon-cyan">0.00 SOL</span>
+            <span class="hidden sm:block text-[10px] text-slate-400 uppercase">50% BURN // 50% TOP 5 DROP</span>
           </div>
         </div>
 
@@ -248,6 +216,40 @@
       </div>
 
     </div>
+
+    <!-- PRE-LAUNCH BANNER (Toggled automatically when live) -->
+    <div id="prelaunch-hero" class="border border-amber-500/40 bg-amber-950/20 backdrop-blur-md rounded-2xl p-5 mb-5 text-center relative overflow-hidden">
+      <div class="absolute -right-12 -top-12 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="inline-block px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/50 text-orange-400 text-xs font-mono font-bold tracking-widest uppercase mb-2">
+        ⚡ WARMING UP CYLINDERS // AWAITING GENESIS IGNITION
+      </div>
+      <h2 class="text-2xl sm:text-base sm:text-3xl font-black text-white uppercase tracking-wider mb-2 font-mono">
+        THE PUMP.FUN V12 PROTOCOL ENGINE
+      </h2>
+      <p class="max-w-2xl mx-auto text-xs sm:text-sm text-slate-300 leading-relaxed font-mono mb-4">
+        Every trade on Pump.fun feeds the V12 Pot with 67% of creator fees. Every progressive round, 50% buys and burns the curve to draw permanent green candles, while 50% drops directly as clean SOL to the Top 5 Holders. Zero bots required.
+      </p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-w-3xl mx-auto text-left font-mono text-xs">
+        <div class="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
+          <div class="text-[10px] text-slate-400 uppercase">1. Anti-Snipe Decay</div>
+          <div class="text-orange-400 font-bold text-sm mt-0.5">5% ➔ 1% BPS</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
+          <div class="text-[10px] text-slate-400 uppercase">2. Split Engine</div>
+          <div class="text-cyan-400 font-bold text-sm mt-0.5">67% Pot / 33% Arch</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
+          <div class="text-[10px] text-slate-400 uppercase">3. Progressive Fuse</div>
+          <div class="text-amber-400 font-bold text-sm mt-0.5">20s ➔ 1h Max</div>
+        </div>
+        <div class="bg-slate-950/80 border border-slate-800 p-2.5 rounded-xl">
+          <div class="text-[10px] text-slate-400 uppercase">4. Direct Airdrop</div>
+          <div class="text-emerald-400 font-bold text-sm mt-0.5">Top 5 Diamond Wallets</div>
+        </div>
+      </div>
+    </div>
+
+    
 
     <!-- PASSENGER CABIN: TOP 5 HOLDERS TABLE -->
     <div class="border border-slate-800 bg-slate-950/90 rounded-2xl p-4 sm:p-5 mb-6">
@@ -415,3 +417,4 @@
   </script>
 </body>
 </html>
+
