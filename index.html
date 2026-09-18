@@ -188,7 +188,7 @@
             <div class="w-5 h-5 rounded-full bg-slate-950 border-2 border-cyan-400 absolute bottom-0 z-10"></div>
           </div>
           <div class="mt-2 font-mono">
-            <span id="pot-display" class="text-sm sm:text-2xl font-black text-cyan-400 neon-cyan">0.00 SOL</span>
+            <span id="pot-display" class="text-sm sm:text-2xl font-black text-cyan-400 neon-cyan">0.0044 SOL</span>
             <span class="hidden sm:block text-[10px] text-slate-400 uppercase">50% BURN // 50% TOP 5 DROP</span>
           </div>
         </div>
@@ -281,38 +281,38 @@
           <tbody id="top5-table-body">
             <tr class="border-b border-slate-900/50 hover:bg-slate-900/30 text-slate-300">
               <td class="py-3 px-3 font-bold text-amber-400">#1 (Pilot)</td>
-              <td class="py-3 px-3 font-mono text-slate-400">Awaiting Genesis...</td>
-              <td class="py-3 px-3">--</td>
+              <td class="py-3 px-3 font-mono text-cyan-300">6Kyt...jcBUK</td>
+              <td class="py-3 px-3 font-mono text-xs">1.9M</td>
               <td class="py-3 px-3">20%</td>
-              <td class="py-3 px-3 text-right text-emerald-400 font-bold">0.00 SOL</td>
+              <td class="py-3 px-3 text-right text-emerald-400 font-bold">QUALIFIED</td>
             </tr>
             <tr class="border-b border-slate-900/50 hover:bg-slate-900/30 text-slate-300">
               <td class="py-3 px-3 font-bold text-slate-300">#2 (Co-Pilot)</td>
-              <td class="py-3 px-3 font-mono text-slate-400">Awaiting Genesis...</td>
-              <td class="py-3 px-3">--</td>
+              <td class="py-3 px-3 font-mono text-cyan-300">527F...svWsnY</td>
+              <td class="py-3 px-3 font-mono text-xs">1.8M</td>
               <td class="py-3 px-3">20%</td>
-              <td class="py-3 px-3 text-right text-emerald-400 font-bold">0.00 SOL</td>
+              <td class="py-3 px-3 text-right text-emerald-400 font-bold">QUALIFIED</td>
             </tr>
             <tr class="border-b border-slate-900/50 hover:bg-slate-900/30 text-slate-300">
               <td class="py-3 px-3 font-bold text-slate-400">#3 (First Class)</td>
-              <td class="py-3 px-3 font-mono text-slate-400">Awaiting Genesis...</td>
-              <td class="py-3 px-3">--</td>
+              <td class="py-3 px-3 font-mono text-cyan-300">FZZ6...9QhijC8</td>
+              <td class="py-3 px-3 font-mono text-xs">1.1M</td>
               <td class="py-3 px-3">20%</td>
-              <td class="py-3 px-3 text-right text-emerald-400 font-bold">0.00 SOL</td>
+              <td class="py-3 px-3 text-right text-emerald-400 font-bold">QUALIFIED</td>
             </tr>
             <tr class="border-b border-slate-900/50 hover:bg-slate-900/30 text-slate-300">
               <td class="py-3 px-3 font-bold text-slate-500">#4 (Cabin)</td>
-              <td class="py-3 px-3 font-mono text-slate-400">Awaiting Genesis...</td>
-              <td class="py-3 px-3">--</td>
+              <td class="py-3 px-3 font-mono text-cyan-300">7Luu...Acw9n8</td>
+              <td class="py-3 px-3 font-mono text-xs">260k</td>
               <td class="py-3 px-3">20%</td>
-              <td class="py-3 px-3 text-right text-emerald-400 font-bold">0.00 SOL</td>
+              <td class="py-3 px-3 text-right text-emerald-400 font-bold">QUALIFIED</td>
             </tr>
             <tr class="hover:bg-slate-900/30 text-slate-300">
               <td class="py-3 px-3 font-bold text-slate-500">#5 (Cabin)</td>
-              <td class="py-3 px-3 font-mono text-slate-400">Awaiting Genesis...</td>
-              <td class="py-3 px-3">--</td>
+              <td class="py-3 px-3 font-mono text-cyan-300">HXFD...fC1HvM</td>
+              <td class="py-3 px-3 font-mono text-xs">Architect</td>
               <td class="py-3 px-3">20%</td>
-              <td class="py-3 px-3 text-right text-emerald-400 font-bold">0.00 SOL</td>
+              <td class="py-3 px-3 text-right text-emerald-400 font-bold">QUALIFIED</td>
             </tr>
           </tbody>
         </table>
@@ -332,6 +332,7 @@
     // =========================================================================
     const CONFIG = {
       isLive: true,
+      genesisTimestamp: 1789766028, // Exact Solana Mainnet Genesis blockTime (Fri Sep 18 2026 21:13:48 UTC)
       mint: "ZgVEVM7jFQyhq18NFLiRkHSa5vwjCAdE31KsLpE2Dti",
       potPda: "HEhSKZGZYQ2qoG8zK55brdxjWfi6GJGJLjrJpDXjDaC2",
       rpcUrl: "https://api.mainnet-beta.solana.com",
@@ -345,9 +346,6 @@
       CONFIG.isLive = true;
     }
 
-    let currentRound = 1;
-    let roundTargetSec = 20;
-    let secRemaining = 20;
     let audioCtx = null;
 
     function toggleEngineSound() {
@@ -373,40 +371,43 @@
       osc.stop(audioCtx.currentTime + 0.85);
     }
 
-    // Tachometer timer simulation / live countdown
-    setInterval(() => {
-      if (secRemaining > 0) {
-        secRemaining--;
-      } else {
-        // Redline triggered!
-        secRemaining = roundTargetSec;
-        // Lengthen fuse (+10% per round up to 24h)
-        if (roundTargetSec < CONFIG.maxDuration) {
-          roundTargetSec = Math.min(Math.floor(roundTargetSec * 1.1), CONFIG.maxDuration);
-        }
-        currentRound++;
-        document.getElementById("round-num").innerText = "#" + currentRound;
-        document.getElementById("target-duration").innerText = roundTargetSec >= 3600 ? (Math.round(roundTargetSec/3600)) + "h" : (roundTargetSec >= 60 ? (Math.round(roundTargetSec/60)) + "m" : roundTargetSec + "s");
-        document.getElementById("total-rounds").innerText = String(currentRound).padStart(5, '0');
+    // Global Blockchain Synchronized Clock (anchored to Genesis blockTime 1789766028)
+    function calculateGlobalRound() {
+      const nowSec = Math.floor(Date.now() / 1000);
+      let elapsed = Math.max(0, nowSec - CONFIG.genesisTimestamp);
+      let round = 1;
+      let dur = CONFIG.baseDuration;
+
+      while (elapsed >= dur) {
+        elapsed -= dur;
+        round++;
+        dur = Math.min(Math.floor(dur * 1.1), CONFIG.maxDuration);
       }
 
-      // Update timer display
-      const mins = Math.floor(secRemaining / 60);
-      const secs = secRemaining % 60;
+      const remaining = Math.max(0, dur - elapsed);
+      return { round, targetDuration: dur, secRemaining: remaining };
+    }
+
+    function updateTimerUI() {
+      const state = calculateGlobalRound();
+
+      document.getElementById("round-num").innerText = "#" + state.round;
+      document.getElementById("target-duration").innerText = state.targetDuration >= 3600 ? (Math.round(state.targetDuration/3600)) + "h" : (state.targetDuration >= 60 ? (Math.round(state.targetDuration/60)) + "m" : state.targetDuration + "s");
+      document.getElementById("total-rounds").innerText = String(state.round).padStart(5, '0');
+
+      const mins = Math.floor(state.secRemaining / 60);
+      const secs = state.secRemaining % 60;
       document.getElementById("timer-display").innerText = 
         String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
 
       // RPM needle position: -45deg (idle) to +135deg (redline)
-      const fraction = 1 - (secRemaining / roundTargetSec);
+      const fraction = 1 - (state.secRemaining / state.targetDuration);
       const angle = -45 + (fraction * 180);
       document.getElementById("rpm-needle").style.transform = `rotate(${angle}deg)`;
+    }
 
-      // Idle needle sway if pre-launch
-      if (!CONFIG.isLive) {
-        const sway = Math.sin(Date.now() / 600) * 10;
-        document.getElementById("fee-needle").style.transform = `rotate(${45 + sway}deg)`;
-      }
-    }, 1000);
+    setInterval(updateTimerUI, 1000);
+    updateTimerUI();
 
     // Live RPC data polling (every 8s when active)
     const KNOWN_WALLETS = [
