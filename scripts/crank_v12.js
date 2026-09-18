@@ -19,6 +19,21 @@ const potRaw = JSON.parse(fs.readFileSync("D:/Svemir/!Projekti/v12/keys/v12-pot-
 const potKeypair = Keypair.fromSecretKey(Uint8Array.from(potRaw));
 const potPubkey = potKeypair.publicKey;
 
+const {
+  PumpSdk,
+  feeSharingConfigPda,
+} = require("C:/Svemir/tools/solana-cli/scripts-scratch/node_modules/@pump-fun/pump-sdk");
+const {
+  NATIVE_MINT,
+  TOKEN_PROGRAM_ID,
+} = require("C:/Svemir/tools/solana-cli/scripts-scratch/node_modules/@solana/spl-token");
+
+const sdk = new PumpSdk(connection);
+const cfgPda = feeSharingConfigPda(mintPubkey);
+
+const deployerRaw = JSON.parse(fs.readFileSync("C:/Svemir/data/keys/botfarmer/deployer.json", "utf8"));
+const deployer = Keypair.fromSecretKey(Uint8Array.from(deployerRaw));
+
 let currentRound = 1;
 let currentDuration = 20; // Starts at 20 seconds
 const MAX_DURATION = 86400; // 24 hours max ceiling
@@ -30,8 +45,43 @@ console.log("Target Mint:", mintPubkey.toBase58());
 console.log("Pot Vault:", potPubkey.toBase58());
 console.log("Initial Fuse:", currentDuration, "seconds");
 
+async function pullCreatorFees() {
+  try {
+    const acc = await connection.getAccountInfo(cfgPda);
+    if (!acc) return;
+    const sharingConfig = sdk.offlinePumpFeeProgram.coder.accounts.decode('sharingConfig', acc.data);
+    const normalizedConfig = {
+      ...sharingConfig,
+      shareholders: sharingConfig.shareholders.map(s => ({
+        address: Array.isArray(s.address) ? s.address[0] : s.address,
+        shareBps: s.shareBps
+      }))
+    };
+
+    const ix = await sdk.distributeCreatorFeesV2({
+      mint: mintPubkey,
+      sharingConfig: normalizedConfig,
+      sharingConfigAddress: cfgPda,
+      quoteMint: NATIVE_MINT,
+      payer: deployer.publicKey,
+      shouldInitializeAta: true,
+      quoteTokenProgram: TOKEN_PROGRAM_ID
+    });
+
+    const tx = new Transaction().add(ix);
+    tx.feePayer = deployer.publicKey;
+    const sig = await sendAndConfirmTransaction(connection, tx, [deployer], { skipPreflight: true });
+    console.log("💸 Creator Fees Distributed to Pot (67%) & Semir (33%)! Sig:", sig);
+  } catch (e) {
+    // Fee vault might be below minimum distributable threshold yet
+  }
+}
+
 async function checkPotAndSettle() {
   try {
+    // 1. Pull accumulated creator fees from Pump.fun vault
+    await pullCreatorFees();
+
     const potBalance = await connection.getBalance(potPubkey);
     console.log(`[Round #${currentRound}] Pot Balance: ${(potBalance / 1e9).toFixed(4)} SOL`);
 
