@@ -148,7 +148,8 @@ async function pulse() {
 
     step++;
   } catch (err) {
-    console.warn("Pulse note:", err.message.slice(0, 80));
+    const errMsg = err?.message || String(err);
+    console.warn("Pulse note:", errMsg.slice(0, 80));
   }
 
   // ULTRA RAPID PULSE: 4 to 8 seconds delay!
