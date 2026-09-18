@@ -5,6 +5,7 @@ const {
   Transaction,
   sendAndConfirmTransaction,
   SystemProgram,
+  ComputeBudgetProgram,
 } = require("C:/Svemir/tools/solana-cli/scripts-scratch/node_modules/@solana/web3.js");
 const {
   PumpSdk,
@@ -23,149 +24,137 @@ const deployerRaw = JSON.parse(fs.readFileSync("C:/Svemir/data/keys/botfarmer/de
 const deployer = Keypair.fromSecretKey(Uint8Array.from(deployerRaw));
 
 console.log("=========================================");
-console.log("🏎️ V12 OVERDRIVE MARKET MAKER ENGINE 🏎️");
+console.log("⚡ V12 TURBO HIGH-FREQUENCY MARKET MAKER ⚡");
 console.log("=========================================");
-console.log("Deployer:", deployer.publicKey.toBase58());
-console.log("Target Mint ($V12):", mint.toBase58());
 
-// Sub-wallets for diverse trader simulation
-let traderA, traderB;
-const subWalletsPath = "D:/Svemir/!Projekti/v12/keys/traders.json";
-if (fs.existsSync(subWalletsPath)) {
-  const data = JSON.parse(fs.readFileSync(subWalletsPath, "utf8"));
-  traderA = Keypair.fromSecretKey(Uint8Array.from(data.a));
-  traderB = Keypair.fromSecretKey(Uint8Array.from(data.b));
-} else {
-  traderA = Keypair.generate();
-  traderB = Keypair.generate();
-  fs.writeFileSync(subWalletsPath, JSON.stringify({
-    a: Array.from(traderA.secretKey),
-    b: Array.from(traderB.secretKey),
-  }, null, 2));
-}
+const tradersData = JSON.parse(fs.readFileSync("D:/Svemir/!Projekti/v12/keys/traders.json", "utf8"));
+const traders = [
+  { name: "A", kp: Keypair.fromSecretKey(Uint8Array.from(tradersData.a)), tokensHeld: new BN(0) },
+  { name: "B", kp: Keypair.fromSecretKey(Uint8Array.from(tradersData.b)), tokensHeld: new BN(0) },
+  { name: "C", kp: Keypair.fromSecretKey(Uint8Array.from(tradersData.c)), tokensHeld: new BN(0) },
+  { name: "D", kp: Keypair.fromSecretKey(Uint8Array.from(tradersData.d)), tokensHeld: new BN(0) },
+];
 
-console.log("Trader A:", traderA.publicKey.toBase58());
-console.log("Trader B:", traderB.publicKey.toBase58());
+traders.forEach(t => console.log(`Trader ${t.name}: ${t.kp.publicKey.toBase58()}`));
 
-async function fundTradersIfNeeded() {
-  const balA = await connection.getBalance(traderA.publicKey);
-  const balB = await connection.getBalance(traderB.publicKey);
+async function fundTraders() {
   const depBal = await connection.getBalance(deployer.publicKey);
-
-  console.log(`[Balances] Deployer: ${(depBal / 1e9).toFixed(4)} SOL | Trader A: ${(balA / 1e9).toFixed(4)} SOL | Trader B: ${(balB / 1e9).toFixed(4)} SOL`);
-
   const tx = new Transaction();
-  if (balA < 30_000_000 && depBal > 70_000_000) {
-    tx.add(SystemProgram.transfer({
-      fromPubkey: deployer.publicKey,
-      toPubkey: traderA.publicKey,
-      lamports: 50_000_000, // 0.05 SOL
-    }));
-  }
-  if (balB < 30_000_000 && depBal > 70_000_000) {
-    tx.add(SystemProgram.transfer({
-      fromPubkey: deployer.publicKey,
-      toPubkey: traderB.publicKey,
-      lamports: 50_000_000, // 0.05 SOL
-    }));
+  
+  for (const t of traders) {
+    const bal = await connection.getBalance(t.kp.publicKey);
+    if (bal < 15_000_000 && depBal > 40_000_000) {
+      tx.add(SystemProgram.transfer({
+        fromPubkey: deployer.publicKey,
+        toPubkey: t.kp.publicKey,
+        lamports: 35_000_000, // 0.035 SOL
+      }));
+    }
   }
 
   if (tx.instructions.length > 0) {
     tx.feePayer = deployer.publicKey;
-    const sig = await sendAndConfirmTransaction(connection, tx, [deployer]);
-    console.log("⛽ Sub-traders funded with fuel! Sig:", sig);
+    const sig = await sendAndConfirmTransaction(connection, tx, [deployer], { skipPreflight: true });
+    console.log("⛽ Sub-traders topped up with fresh fuel! Sig:", sig.slice(0, 20) + "...");
   }
 }
 
-async function executeBuy(trader, solAmountNum) {
+async function buy(traderObj, solAmount) {
   const global = await onlineSdk.fetchGlobal();
   const curve = await onlineSdk.fetchBondingCurve(mint);
 
-  const dx = new BN(Math.floor(solAmountNum * 1e9));
+  const dx = new BN(Math.floor(solAmount * 1e9));
   const x = curve.virtualQuoteReserves;
   const y = curve.virtualTokenReserves;
   const tokenAmount = dx.mul(y).div(x.add(dx));
-
-  console.log(`[BUY] ${trader.publicKey.toBase58().slice(0, 4)}.. buying with ${solAmountNum.toFixed(4)} SOL -> ~${(Number(tokenAmount) / 1e6).toFixed(0)} V12`);
 
   const ixs = await sdk.buyV2Instructions({
     global,
     bondingCurveAccountInfo: curve,
     bondingCurve: curve,
     mint,
-    user: trader.publicKey,
-    amount: tokenAmount.mul(new BN(85)).div(new BN(100)), // 15% slippage
+    user: traderObj.kp.publicKey,
+    amount: tokenAmount.mul(new BN(80)).div(new BN(100)),
     quoteAmount: dx,
-    slippage: 15,
+    slippage: 20,
   });
 
-  const tx = new Transaction().add(...ixs);
-  tx.feePayer = trader.publicKey;
-  const sig = await sendAndConfirmTransaction(connection, tx, [trader], { skipPreflight: true });
-  console.log(`✅ [BUY SUCCESS] Sig: ${sig}`);
-  return tokenAmount;
+  const tx = new Transaction();
+  tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }));
+  tx.add(...ixs);
+  tx.feePayer = traderObj.kp.publicKey;
+
+  const sig = await sendAndConfirmTransaction(connection, tx, [traderObj.kp], { skipPreflight: true });
+  traderObj.tokensHeld = traderObj.tokensHeld.add(tokenAmount);
+  console.log(`🟢 [BUY] Trader ${traderObj.name} bought with ${solAmount.toFixed(4)} SOL (~${(Number(tokenAmount)/1e6).toFixed(0)} V12) | Sig: ${sig.slice(0, 16)}..`);
 }
 
-async function executeSell(trader, tokenAmount) {
+async function sell(traderObj, fraction = 0.70) {
+  if (traderObj.tokensHeld.lte(new BN(0))) return;
+
   const global = await onlineSdk.fetchGlobal();
   const curve = await onlineSdk.fetchBondingCurve(mint);
 
-  const dy = tokenAmount;
+  const dy = traderObj.tokensHeld.mul(new BN(Math.floor(fraction * 100))).div(new BN(100));
+  if (dy.lte(new BN(10000))) return;
+
   const x = curve.virtualQuoteReserves;
   const y = curve.virtualTokenReserves;
   const expectedSol = dy.mul(x).div(y.add(dy));
-
-  console.log(`[SELL] ${trader.publicKey.toBase58().slice(0, 4)}.. recycling ${(Number(tokenAmount) / 1e6).toFixed(0)} V12 -> ~${(Number(expectedSol) / 1e9).toFixed(4)} SOL`);
 
   const ixs = await sdk.sellV2Instructions({
     global,
     bondingCurveAccountInfo: curve,
     bondingCurve: curve,
     mint,
-    user: trader.publicKey,
-    amount: tokenAmount,
-    quoteAmount: expectedSol.mul(new BN(85)).div(new BN(100)), // 15% slippage
-    slippage: 15,
+    user: traderObj.kp.publicKey,
+    amount: dy,
+    quoteAmount: expectedSol.mul(new BN(80)).div(new BN(100)),
+    slippage: 20,
   });
 
-  const tx = new Transaction().add(...ixs);
-  tx.feePayer = trader.publicKey;
-  const sig = await sendAndConfirmTransaction(connection, tx, [trader], { skipPreflight: true });
-  console.log(`✅ [SELL SUCCESS] Recycled! Sig: ${sig}`);
+  const tx = new Transaction();
+  tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50000 }));
+  tx.add(...ixs);
+  tx.feePayer = traderObj.kp.publicKey;
+
+  const sig = await sendAndConfirmTransaction(connection, tx, [traderObj.kp], { skipPreflight: true });
+  traderObj.tokensHeld = traderObj.tokensHeld.sub(dy);
+  console.log(`🔴 [SELL] Trader ${traderObj.name} recycled ${(Number(dy)/1e6).toFixed(0)} V12 -> ~${(Number(expectedSol)/1e9).toFixed(4)} SOL | Sig: ${sig.slice(0, 16)}..`);
 }
 
-async function loop() {
+let step = 0;
+async function pulse() {
   try {
-    await fundTradersIfNeeded();
-
-    // Select trader A or B randomly
-    const trader = Math.random() > 0.5 ? traderA : traderB;
-    const bal = await connection.getBalance(trader.publicKey);
-
-    if (bal > 20_000_000) {
-      // Buy with random 0.012 to 0.025 SOL
-      const buySol = 0.012 + Math.random() * 0.013;
-      const boughtTokens = await executeBuy(trader, buySol);
-
-      // Random hold time (10s to 30s)
-      const holdTime = 10000 + Math.floor(Math.random() * 20000);
-      console.log(`⏳ Holding for ${(holdTime / 1000).toFixed(0)}s to show green candle on chart...`);
-      await new Promise(r => setTimeout(r, holdTime));
-
-      // Sell back 60% - 85% of tokens to recycle SOL into the trader wallet
-      const sellFraction = 0.60 + Math.random() * 0.25;
-      const tokensToSell = boughtTokens.mul(new BN(Math.floor(sellFraction * 100))).div(new BN(100));
-      await executeSell(trader, tokensToSell);
+    if (step % 5 === 0) {
+      await fundTraders();
     }
+
+    // Pick random trader
+    const t = traders[Math.floor(Math.random() * traders.length)];
+    const bal = await connection.getBalance(t.kp.publicKey);
+
+    // Decision: Buy or Sell?
+    // If trader has tokens and good balance, 60% chance to buy, 40% chance to sell
+    const shouldSell = t.tokensHeld.gt(new BN(100_000_000)) && (Math.random() > 0.55 || bal < 12_000_000);
+
+    if (shouldSell) {
+      await sell(t, 0.65 + Math.random() * 0.25);
+    } else if (bal > 12_000_000) {
+      // Rapid micro-buy: 0.006 to 0.016 SOL
+      const buySize = 0.006 + Math.random() * 0.010;
+      await buy(t, buySize);
+    }
+
+    step++;
   } catch (err) {
-    console.error("Volume loop note:", err.message);
+    console.warn("Pulse note:", err.message.slice(0, 80));
   }
 
-  // Next cycle after 15-40 seconds
-  const nextDelay = 15000 + Math.floor(Math.random() * 25000);
-  console.log(`💤 Next volume pulse in ${(nextDelay / 1000).toFixed(0)}s...`);
-  setTimeout(loop, nextDelay);
+  // ULTRA RAPID PULSE: 4 to 8 seconds delay!
+  const delay = 4000 + Math.floor(Math.random() * 4500);
+  setTimeout(pulse, delay);
 }
 
-// Start market maker loop
-loop();
+// Start High-Frequency Pulse
+pulse();
