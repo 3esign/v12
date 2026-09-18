@@ -332,11 +332,11 @@
     // =========================================================================
     const CONFIG = {
       isLive: false,
-      mint: "PENDING_MAINNET_GENESIS",
-      potPda: "PENDING_PDA",
+      mint: "ZgVEVM7jFQyhq18NFLiRkHSa5vwjCAdE31KsLpE2Dti",
+      potPda: "HEhSKZGZYQ2qoG8zK55brdxjWfi6GJGJLjrJpDXjDaC2",
       rpcUrl: "https://api.mainnet-beta.solana.com",
       baseDuration: 20, // 20s initial round
-      maxDuration: 3600 // 1 hour cap
+      maxDuration: 86400 // 24 hours cap
     };
 
     // Check URL parameters (e.g. ?live=1 for testing)
@@ -380,13 +380,13 @@
       } else {
         // Redline triggered!
         secRemaining = roundTargetSec;
-        // Lengthen fuse if not capped at 1h
+        // Lengthen fuse (+10% per round up to 24h)
         if (roundTargetSec < CONFIG.maxDuration) {
-          roundTargetSec = Math.min(roundTargetSec * 2, CONFIG.maxDuration);
+          roundTargetSec = Math.min(Math.floor(roundTargetSec * 1.1), CONFIG.maxDuration);
         }
         currentRound++;
         document.getElementById("round-num").innerText = "#" + currentRound;
-        document.getElementById("target-duration").innerText = roundTargetSec >= 60 ? (roundTargetSec/60) + "m" : roundTargetSec + "s";
+        document.getElementById("target-duration").innerText = roundTargetSec >= 3600 ? (Math.round(roundTargetSec/3600)) + "h" : (roundTargetSec >= 60 ? (Math.round(roundTargetSec/60)) + "m" : roundTargetSec + "s");
         document.getElementById("total-rounds").innerText = String(currentRound).padStart(5, '0');
       }
 
@@ -408,12 +408,62 @@
       }
     }, 1000);
 
+    // Live RPC data polling (every 10s when active)
+    async function refreshLiveData() {
+      if (!CONFIG.isLive) return;
+      try {
+        // 1. Fetch Pot Balance
+        const potRes = await fetch(CONFIG.rpcUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getBalance', params: [CONFIG.potPda] })
+        });
+        const potData = await potRes.json();
+        if (potData?.result?.value !== undefined) {
+          const sol = (potData.result.value / 1e9).toFixed(3);
+          const potElem = document.getElementById('pot-display');
+          if (potElem) potElem.innerText = sol + ' SOL';
+        }
+
+        // 2. Fetch Top 5 Holders
+        const topRes = await fetch(CONFIG.rpcUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'getTokenLargestAccounts', params: [CONFIG.mint] })
+        });
+        const topData = await topRes.json();
+        if (topData?.result?.value && topData.result.value.length > 0) {
+          const tbody = document.getElementById('top5-table-body');
+          if (tbody) {
+            tbody.innerHTML = topData.result.value.slice(0, 5).map((acc, idx) => {
+              const shortAddr = acc.address.slice(0, 4) + '...' + acc.address.slice(-4);
+              const rankNames = ['#1 (Pilot)', '#2 (Co-Pilot)', '#3 (First Class)', '#4 (Cabin)', '#5 (Cabin)'];
+              const pct = ((acc.uiAmount / 1_000_000_000) * 100).toFixed(2);
+              return `
+                <tr class="border-b border-slate-900/50 hover:bg-slate-900/30 text-slate-300">
+                  <td class="py-3 px-3 font-bold ${idx === 0 ? 'text-amber-400' : 'text-slate-300'}">${rankNames[idx]}</td>
+                  <td class="py-3 px-3 font-mono text-cyan-300">${shortAddr}</td>
+                  <td class="py-3 px-3">${pct}%</td>
+                  <td class="py-3 px-3">20%</td>
+                  <td class="py-3 px-3 text-right text-emerald-400 font-bold">QUALIFIED</td>
+                </tr>
+              `;
+            }).join('');
+          }
+        }
+      } catch (err) {
+        console.warn('RPC poll note:', err);
+      }
+    }
+
     // Initial state check
     if (CONFIG.isLive) {
       document.getElementById("system-badge").innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> LIVE OVERDRIVE ACTIVE`;
       document.getElementById("system-badge").className = "text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-500 text-emerald-300 font-bold tracking-wider uppercase flex items-center gap-1.5";
       document.getElementById("prelaunch-hero").style.display = "none";
+      refreshLiveData();
     }
+    setInterval(refreshLiveData, 10000);
   </script>
 </body>
 </html>
