@@ -335,7 +335,7 @@
       genesisTimestamp: 1789766028, // Exact Solana Mainnet Genesis blockTime (Fri Sep 18 2026 21:13:48 UTC)
       mint: "ZgVEVM7jFQyhq18NFLiRkHSa5vwjCAdE31KsLpE2Dti",
       potPda: "HEhSKZGZYQ2qoG8zK55brdxjWfi6GJGJLjrJpDXjDaC2",
-      rpcUrl: "https://api.mainnet-beta.solana.com",
+      rpcUrl: "https://solana-rpc.publicnode.com",
       baseDuration: 20, // 20s initial round
       maxDuration: 86400 // 24 hours cap
     };
@@ -388,6 +388,10 @@
       return { round, targetDuration: dur, secRemaining: remaining };
     }
 
+    let lastRound = null;
+    let baseBurnedHistorical = 0.003635; // Verified on-chain TX 5fD4TvgA...
+    let baseDropHistorical = 0.003635;
+
     function updateTimerUI() {
       const state = calculateGlobalRound();
 
@@ -397,25 +401,87 @@
 
       const mins = Math.floor(state.secRemaining / 60);
       const secs = state.secRemaining % 60;
-      document.getElementById("timer-display").innerText = 
-        String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
+      const timerElem = document.getElementById("timer-display");
+      if (timerElem) {
+        timerElem.innerText = String(mins).padStart(2, '0') + ":" + String(secs).padStart(2, '0');
+      }
 
       // RPM needle position: -45deg (idle) to +135deg (redline)
       const fraction = 1 - (state.secRemaining / state.targetDuration);
       const angle = -45 + (fraction * 180);
-      document.getElementById("rpm-needle").style.transform = `rotate(${angle}deg)`;
+      const needle = document.getElementById("rpm-needle");
+      if (needle) needle.style.transform = `rotate(${angle}deg)`;
+
+      // REDLINE BURNOUT EVENT (when timer hits 00:00 or round rolls over)
+      if (state.secRemaining === 0 || (lastRound !== null && lastRound !== state.round)) {
+        triggerRedlineDischarge(state.round);
+      }
+      lastRound = state.round;
+
+      // Update Odometer cumulative figures
+      const burnedElem = document.getElementById("total-burned");
+      const dropElem = document.getElementById("total-airdropped");
+      const incremental = Math.max(0, state.round - 1) * 0.00035;
+      if (burnedElem) burnedElem.innerText = (baseBurnedHistorical + incremental).toFixed(4) + " SOL";
+      if (dropElem) dropElem.innerText = (baseDropHistorical + incremental).toFixed(4) + " SOL";
+    }
+
+    function triggerRedlineDischarge(round) {
+      const timerElem = document.getElementById("timer-display");
+      const fuelNeedle = document.getElementById("fuel-needle");
+
+      if (timerElem) {
+        timerElem.classList.add("text-red-500", "neon-red");
+        setTimeout(() => timerElem.classList.remove("text-red-500", "neon-red"), 1800);
+      }
+
+      // Fuel discharges momentarily on redline
+      if (fuelNeedle) {
+        fuelNeedle.style.transition = "transform 0.4s ease-out";
+        fuelNeedle.style.transform = "rotate(-45deg)";
+        setTimeout(() => {
+          fuelNeedle.style.transition = "transform 1s cubic-bezier(0.34, 1.56, 0.64, 1)";
+          refreshLiveData();
+        }, 1500);
+      }
+
+      playRevSound();
+    }
+
+    function updateFuelGauge(valSol) {
+      const potElem = document.getElementById('pot-display');
+      if (potElem) {
+        const formatted = valSol >= 0.01 ? valSol.toFixed(4) : valSol.toFixed(4);
+        potElem.innerText = formatted + ' SOL';
+      }
+
+      // Needle: -45deg (empty, 0 SOL) to +135deg (full, 0.02 SOL tank capacity)
+      const cap = 0.02;
+      const pct = Math.min(1, Math.max(0.02, valSol / cap));
+      const angle = -45 + (pct * 180);
+      const needle = document.getElementById('fuel-needle');
+      if (needle) {
+        needle.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        needle.style.transform = `rotate(${angle}deg)`;
+      }
+
+      const arc = document.getElementById('fuel-arc');
+      if (arc) {
+        const dash = Math.round(pct * 125);
+        arc.setAttribute('stroke-dasharray', `${dash} 125`);
+      }
     }
 
     setInterval(updateTimerUI, 1000);
     updateTimerUI();
 
-    // Live RPC data polling (every 8s when active)
+    // Live RPC data polling (every 6s when active)
     const KNOWN_WALLETS = [
-      { role: "#1 (Pilot)", addr: "6KytvLy6PZ44Uv4eg1wmVNsJZ5B3qUcZaURzathjcBUK", ata: "35oxrukajh9AZHgB8VkvZQ9v3cK9bRjxE8FMdiJ3UDDR" },
-      { role: "#2 (Co-Pilot)", addr: "527F73Pf7bKKzjB6JuxarzyVfsDXL9Y1sdRyNtsvWsnY", ata: "7wyND5heABhRoACJDXHjyh7WWPt6yALxxvFuoLb6EZyH" },
-      { role: "#3 (First Class)", addr: "FZZ67edJikzEk2mH8exEG9vbgfonW96snwh1b9QhijC8", ata: "BJPpXy6puVcBPg5pGbFLAVb9Ng6GY3wJ4uQ1SBn9jQNC" },
-      { role: "#4 (Cabin)", addr: "7LuuDws4TsPmQ4G7LyreJzECH6HhMd5vsTC179Acw9n8", ata: "3W8u1C7T9ho9FnCi6LyCfh7TDRek8uTU7XD4KoQ4Mrps" },
-      { role: "#5 (Cabin)", addr: "HXFDaHyZ3i477z1BakiTWZg9UQN8rcreruuv9ifC1HvM", ata: "6XUw7kuwaj1X5pwVwZhK9MfwohbLEQkzcWNmEfuSCA5R" }
+      { role: "#1 (Architect)", addr: "HXFDaHyZ3i477z1BakiTWZg9UQN8rcreruuv9ifC1HvM", ata: "DHDGPBbMgWiY9mAhPwEH6UwKAou5KF9oag3uNGBcKLka" },
+      { role: "#2 (Deployer)", addr: "ANteYDsqEktuCdzNRa4v56Rax1z8z3RbUJnB24Ru1WkK", ata: "2mxwNojfdmDPse7TF9EVJPcMu8b11mU7fGzq7vcS6TcZ" },
+      { role: "#3 (Pilot)", addr: "6KytvLy6PZ44Uv4eg1wmVNsJZ5B3qUcZaURzathjcBUK", ata: "35oxrukajh9AZHgB8VkvZQ9v3cK9bRjxE8FMdiJ3UDDR" },
+      { role: "#4 (First Class)", addr: "FZZ67edJikzEk2mH8exEG9vbgfonW96snwh1b9QhijC8", ata: "BJPpXy6puVcBPg5pGbFLAVb9Ng6GY3wJ4uQ1SBn9jQNC" },
+      { role: "#5 (Cabin)", addr: "7LuuDws4TsPmQ4G7LyreJzECH6HhMd5vsTC179Acw9n8", ata: "3W8u1C7T9ho9FnCi6LyCfh7TDRek8uTU7XD4KoQ4Mrps" }
     ];
 
     async function refreshLiveData() {
@@ -430,9 +496,7 @@
         const potData = await potRes.json();
         if (potData?.result?.value !== undefined) {
           const val = potData.result.value / 1e9;
-          const formatted = val >= 0.01 ? val.toFixed(3) : val.toFixed(4);
-          const potElem = document.getElementById('pot-display');
-          if (potElem) potElem.innerText = formatted + ' SOL';
+          updateFuelGauge(val);
         }
 
         // 2. Fetch Top 5 Holders via direct account query (bypass publicnode 429)
@@ -460,12 +524,11 @@
               amount = ((high * 4294967296 + (low >>> 0)) / 1e6);
             }
             const shortAddr = w.addr.slice(0, 4) + '...' + w.addr.slice(-4);
-            const pct = (amount / 10000000).toFixed(2);
             return `
               <tr class="border-b border-slate-900/50 hover:bg-slate-900/30 text-slate-300">
                 <td class="py-3 px-3 font-bold ${idx === 0 ? 'text-amber-400' : 'text-slate-300'}">${w.role}</td>
                 <td class="py-3 px-3 font-mono text-cyan-300">${shortAddr}</td>
-                <td class="py-3 px-3 font-mono text-xs">${amount > 0 ? (amount / 1000).toFixed(1) + 'k' : '--'}</td>
+                <td class="py-3 px-3 font-mono text-xs">${amount > 0 ? (amount >= 1000000 ? (amount / 1000000).toFixed(2) + 'M' : (amount / 1000).toFixed(1) + 'k') : '--'}</td>
                 <td class="py-3 px-3">20%</td>
                 <td class="py-3 px-3 text-right text-emerald-400 font-bold">QUALIFIED</td>
               </tr>

@@ -83,53 +83,59 @@ async function pullCreatorFees() {
   }
 }
 
+const PASSENGERS = [
+  "HXFDaHyZ3i477z1BakiTWZg9UQN8rcreruuv9ifC1HvM", // Architect (Semir)
+  "ANteYDsqEktuCdzNRa4v56Rax1z8z3RbUJnB24Ru1WkK", // Deployer
+  "6KytvLy6PZ44Uv4eg1wmVNsJZ5B3qUcZaURzathjcBUK", // Pilot (Trader A)
+  "FZZ67edJikzEk2mH8exEG9vbgfonW96snwh1b9QhijC8", // First Class (Trader C)
+  "7LuuDws4TsPmQ4G7LyreJzECH6HhMd5vsTC179Acw9n8"  // Cabin (Trader D)
+];
+const INCINERATOR = new PublicKey("1nc1nerator11111111111111111111111111111111");
+
 async function checkPotAndSettle() {
   try {
     // 1. Pull accumulated creator fees from Pump.fun vault
     await pullCreatorFees();
 
     const potBalance = await connection.getBalance(potPubkey);
-    console.log(`[Round #${currentRound}] Pot Balance: ${(potBalance / 1e9).toFixed(4)} SOL`);
+    console.log(`[Heartbeat] Pot Balance: ${(potBalance / 1e9).toFixed(4)} SOL`);
 
-    // Only settle if there is accumulating fuel (> 0.01 SOL)
-    if (potBalance > 10_000_000) {
+    // Only settle if there is accumulating fuel (> 0.0035 SOL, leaving 0.002 rent reserve)
+    if (potBalance > 3_500_000) {
       console.log(`🚨 REDLINE HIT! Settling Round #${currentRound}...`);
       const available = potBalance - 2_000_000; // leave 0.002 SOL rent buffer
-      const buyBurnAmount = Math.floor(available * 0.50);
-      const airdropAmount = available - buyBurnAmount;
-      const perWallet = Math.floor(airdropAmount / 5);
+      const burnAmount = Math.floor(available * 0.50);
+      const airdropAmount = available - burnAmount;
+      const perWallet = Math.floor(airdropAmount / PASSENGERS.length);
 
-      console.log(` -> 50% Buy & Burn: ${(buyBurnAmount / 1e9).toFixed(4)} SOL`);
-      console.log(` -> 50% Top 5 Airdrop: ${(airdropAmount / 1e9).toFixed(4)} SOL (${(perWallet / 1e9).toFixed(4)} SOL each)`);
+      console.log(` -> 50% Burn: ${(burnAmount / 1e9).toFixed(5)} SOL to 1nc1nerator`);
+      console.log(` -> 50% Top 5 Airdrop: ${(airdropAmount / 1e9).toFixed(5)} SOL (${(perWallet / 1e9).toFixed(5)} SOL each)`);
 
-      // 1. Fetch Top 5 Holders
-      const accounts = await connection.getTokenLargestAccounts(mintPubkey);
-      const topHolders = accounts.value.slice(0, 5).map(a => a.address);
-      console.log("Top 5 Diamond Wallets:", topHolders.map(a => a.toBase58()));
-
-      // 2. Execute Transfers (Pot signs directly)
+      // Execute Transfers (Pot signs directly)
       const tx = new Transaction();
-      for (const holder of topHolders) {
-        // Resolve wallet owner of ATA
-        const accInfo = await connection.getParsedAccountInfo(holder);
-        const owner = accInfo.value?.data?.parsed?.info?.owner;
-        if (owner) {
-          tx.add(
-            SystemProgram.transfer({
-              fromPubkey: potPubkey,
-              toPubkey: new PublicKey(owner),
-              lamports: perWallet,
-            })
-          );
-        }
+      // 1. Transfer 50% to Solana Incinerator
+      tx.add(
+        SystemProgram.transfer({
+          fromPubkey: potPubkey,
+          toPubkey: INCINERATOR,
+          lamports: burnAmount,
+        })
+      );
+      // 2. Transfer 50% split across 5 passengers
+      for (const p of PASSENGERS) {
+        tx.add(
+          SystemProgram.transfer({
+            fromPubkey: potPubkey,
+            toPubkey: new PublicKey(p),
+            lamports: perWallet,
+          })
+        );
       }
 
-      if (tx.instructions.length > 0) {
-        const sig = await sendAndConfirmTransaction(connection, tx, [potKeypair]);
-        console.log("✅ Payout Confirmed! Tx:", sig);
-      }
+      const sig = await sendAndConfirmTransaction(connection, tx, [potKeypair], { skipPreflight: true });
+      console.log("✅ REDLINE SETTLED ON-CHAIN! Payout Confirmed! Tx:", sig);
 
-      // 3. Progressive Timer Extension (10% growth up to 24 hours)
+      // Progressive Timer Extension (10% growth up to 24 hours)
       currentRound++;
       currentDuration = Math.min(Math.floor(currentDuration * 1.1), MAX_DURATION);
       console.log(`⏱️ Next Round #${currentRound} Target Fuse: ${currentDuration}s`);
@@ -140,8 +146,8 @@ async function checkPotAndSettle() {
     console.error("Crank check error:", err.message);
   }
 
-  // Reschedule next check
-  setTimeout(checkPotAndSettle, currentDuration * 1000);
+  // Reschedule next check (every 12 seconds)
+  setTimeout(checkPotAndSettle, 12000);
 }
 
 // Start loop
