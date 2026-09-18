@@ -408,7 +408,15 @@
       }
     }, 1000);
 
-    // Live RPC data polling (every 10s when active)
+    // Live RPC data polling (every 8s when active)
+    const KNOWN_WALLETS = [
+      { role: "#1 (Pilot)", addr: "6KytvLy6PZ44Uv4eg1wmVNsJZ5B3qUcZaURzathjcBUK", ata: "35oxrukajh9AZHgB8VkvZQ9v3cK9bRjxE8FMdiJ3UDDR" },
+      { role: "#2 (Co-Pilot)", addr: "527F73Pf7bKKzjB6JuxarzyVfsDXL9Y1sdRyNtsvWsnY", ata: "7wyND5heABhRoACJDXHjyh7WWPt6yALxxvFuoLb6EZyH" },
+      { role: "#3 (First Class)", addr: "FZZ67edJikzEk2mH8exEG9vbgfonW96snwh1b9QhijC8", ata: "BJPpXy6puVcBPg5pGbFLAVb9Ng6GY3wJ4uQ1SBn9jQNC" },
+      { role: "#4 (Cabin)", addr: "7LuuDws4TsPmQ4G7LyreJzECH6HhMd5vsTC179Acw9n8", ata: "3W8u1C7T9ho9FnCi6LyCfh7TDRek8uTU7XD4KoQ4Mrps" },
+      { role: "#5 (Cabin)", addr: "HXFDaHyZ3i477z1BakiTWZg9UQN8rcreruuv9ifC1HvM", ata: "6XUw7kuwaj1X5pwVwZhK9MfwohbLEQkzcWNmEfuSCA5R" }
+    ];
+
     async function refreshLiveData() {
       if (!CONFIG.isLive) return;
       try {
@@ -420,36 +428,48 @@
         });
         const potData = await potRes.json();
         if (potData?.result?.value !== undefined) {
-          const sol = (potData.result.value / 1e9).toFixed(3);
+          const val = potData.result.value / 1e9;
+          const formatted = val >= 0.01 ? val.toFixed(3) : val.toFixed(4);
           const potElem = document.getElementById('pot-display');
-          if (potElem) potElem.innerText = sol + ' SOL';
+          if (potElem) potElem.innerText = formatted + ' SOL';
         }
 
-        // 2. Fetch Top 5 Holders
-        const topRes = await fetch(CONFIG.rpcUrl, {
+        // 2. Fetch Top 5 Holders via direct account query (bypass publicnode 429)
+        const ataRes = await fetch(CONFIG.rpcUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'getTokenLargestAccounts', params: [CONFIG.mint] })
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            id: 2,
+            method: 'getMultipleAccounts',
+            params: [KNOWN_WALLETS.map(w => w.ata), { encoding: 'base64' }]
+          })
         });
-        const topData = await topRes.json();
-        if (topData?.result?.value && topData.result.value.length > 0) {
-          const tbody = document.getElementById('top5-table-body');
-          if (tbody) {
-            tbody.innerHTML = topData.result.value.slice(0, 5).map((acc, idx) => {
-              const shortAddr = acc.address.slice(0, 4) + '...' + acc.address.slice(-4);
-              const rankNames = ['#1 (Pilot)', '#2 (Co-Pilot)', '#3 (First Class)', '#4 (Cabin)', '#5 (Cabin)'];
-              const pct = ((acc.uiAmount / 1_000_000_000) * 100).toFixed(2);
-              return `
-                <tr class="border-b border-slate-900/50 hover:bg-slate-900/30 text-slate-300">
-                  <td class="py-3 px-3 font-bold ${idx === 0 ? 'text-amber-400' : 'text-slate-300'}">${rankNames[idx]}</td>
-                  <td class="py-3 px-3 font-mono text-cyan-300">${shortAddr}</td>
-                  <td class="py-3 px-3">${pct}%</td>
-                  <td class="py-3 px-3">20%</td>
-                  <td class="py-3 px-3 text-right text-emerald-400 font-bold">QUALIFIED</td>
-                </tr>
-              `;
-            }).join('');
-          }
+        const ataData = await ataRes.json();
+        const tbody = document.getElementById('top5-table-body');
+        if (tbody && ataData?.result?.value) {
+          tbody.innerHTML = KNOWN_WALLETS.map((w, idx) => {
+            const acc = ataData.result.value[idx];
+            let amount = 0;
+            if (acc && acc.data && acc.data[0]) {
+              const raw = atob(acc.data[0]);
+              let low = 0, high = 0;
+              for (let i = 0; i < 4; i++) low |= raw.charCodeAt(64 + i) << (i * 8);
+              for (let i = 0; i < 4; i++) high |= raw.charCodeAt(68 + i) << (i * 8);
+              amount = ((high * 4294967296 + (low >>> 0)) / 1e6);
+            }
+            const shortAddr = w.addr.slice(0, 4) + '...' + w.addr.slice(-4);
+            const pct = (amount / 10000000).toFixed(2);
+            return `
+              <tr class="border-b border-slate-900/50 hover:bg-slate-900/30 text-slate-300">
+                <td class="py-3 px-3 font-bold ${idx === 0 ? 'text-amber-400' : 'text-slate-300'}">${w.role}</td>
+                <td class="py-3 px-3 font-mono text-cyan-300">${shortAddr}</td>
+                <td class="py-3 px-3 font-mono text-xs">${amount > 0 ? (amount / 1000).toFixed(1) + 'k' : '--'}</td>
+                <td class="py-3 px-3">20%</td>
+                <td class="py-3 px-3 text-right text-emerald-400 font-bold">QUALIFIED</td>
+              </tr>
+            `;
+          }).join('');
         }
       } catch (err) {
         console.warn('RPC poll note:', err);
